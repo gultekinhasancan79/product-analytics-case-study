@@ -5,15 +5,11 @@ import unittest
 from pathlib import Path
 
 from src.data_quality import read_raw, validate_events, validate_rows
-from src.diagnostics import (
-    power_plan,
-    randomization_balance,
-    sample_ratio_mismatch,
-    treatment_interaction,
-)
+from src.diagnostics import randomization_balance, sample_ratio_mismatch, treatment_interaction
 from src.experiment import build_report, load_users, two_proportion_test
 from src.generate_dataset import generate_users, write_csv
 from src.generate_events import generate_events, write_events
+from src.power import minimum_detectable_effect, sample_size_per_arm
 from src.run_sql import load_database, run_query
 
 
@@ -100,13 +96,23 @@ class ProductAnalyticsPipelineTests(unittest.TestCase):
         try:
             rows = load_users(users_path)
             activation = two_proportion_test(rows, "activated_7d")
-            plan = power_plan(activation.control_rate, len(rows), target_mde=0.03)
+            n_control = sum(row["variant"] == "control" for row in rows)
+            n_treatment = sum(row["variant"] == "treatment" for row in rows)
+            required_per_arm = sample_size_per_arm(
+                activation.control_rate, 0.03, target_power=0.80
+            )
+            mde = minimum_detectable_effect(
+                activation.control_rate,
+                n_control,
+                n_treatment,
+                target_power=0.80,
+            )
         finally:
             temp.cleanup()
 
-        self.assertLessEqual(plan.required_total, 12_000)
-        self.assertGreater(plan.achieved_mde, 0.02)
-        self.assertLess(plan.achieved_mde, 0.03)
+        self.assertEqual(required_per_arm, 4347)
+        self.assertGreater(mde, 0.025)
+        self.assertLess(mde, 0.026)
 
     def test_device_interaction_is_reported_but_not_confirmed(self) -> None:
         temp, users_path, _ = self._dataset()
@@ -128,7 +134,7 @@ class ProductAnalyticsPipelineTests(unittest.TestCase):
         self.assertLess(interaction.ci_low, 0)
         self.assertGreater(interaction.ci_high, 0)
 
-    def test_report_contains_health_power_and_interaction_sections(self) -> None:
+    def test_report_contains_health_power_interaction_and_cuped_sections(self) -> None:
         temp, users_path, _ = self._dataset()
         try:
             report = build_report(load_users(users_path))
@@ -137,8 +143,9 @@ class ProductAnalyticsPipelineTests(unittest.TestCase):
 
         self.assertIn("Decision: SHIP treatment", report)
         self.assertIn("Sample-ratio mismatch check", report)
-        self.assertIn("Pre-analysis power target", report)
+        self.assertIn("Planning power at the observed", report)
         self.assertIn("Treatment × device interaction", report)
+        self.assertIn("CUPED-style sensitivity analysis", report)
 
     def test_sql_queries_execute_against_generated_data(self) -> None:
         temp, users_path, events_path = self._dataset(1000)

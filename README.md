@@ -1,7 +1,7 @@
 <h1 align="center">Product Analytics Case Study</h1>
 
 <p align="center">
-  Experiment design, integrity diagnostics, event analytics, SQL, statistical inference, data-quality gates, and a decision-ready product readout.
+  Experiment design, integrity diagnostics, event analytics, power planning, sensitivity analysis, SQL, data-quality gates, and a decision-ready product readout.
 </p>
 
 <p align="center">
@@ -10,6 +10,7 @@
   <img src="https://img.shields.io/badge/SQL-Executable%20in%20CI-336791?logo=postgresql&logoColor=white" alt="SQL">
   <img src="https://img.shields.io/badge/A%2FB%20Testing-Power%20%2B%20SRM-7C3AED" alt="A/B Testing">
   <img src="https://img.shields.io/badge/Event%20Model-41k%2B%20Events-0F766E" alt="Event model">
+  <img src="https://img.shields.io/badge/Sensitivity-CUPED--style-6D28D9" alt="CUPED-style sensitivity">
   <img src="https://img.shields.io/badge/Data-Synthetic%20%26%20Deterministic-2ea44f" alt="Synthetic deterministic data">
   <img src="https://img.shields.io/badge/License-MIT-2ea44f" alt="MIT License">
 </p>
@@ -28,7 +29,7 @@ The analysis uses a deterministic synthetic dataset of **12,000 randomized signu
 
 ### Decision
 
-**Ship the treatment**, while treating the weaker mobile response as a follow-up hypothesis rather than a confirmed heterogeneous effect.
+**Ship the treatment**, while treating the weaker mobile response and variance-reduction analysis as supporting diagnostics rather than replacements for the pre-specified primary analysis.
 
 | Metric | Control | Treatment | Lift | Statistical read |
 | --- | ---: | ---: | ---: | --- |
@@ -42,17 +43,18 @@ The analysis uses a deterministic synthetic dataset of **12,000 randomized signu
   <img src="assets/activation_result.svg" alt="7-day activation result" width="760">
 </p>
 
-### Experiment health
+### Experiment health & planning
 
-The positive result is not interpreted before checking assignment integrity:
+The positive result is not interpreted before checking assignment integrity and design sensitivity:
 
 - **6,024 control / 5,976 treatment**
 - **SRM p = 0.6613** — no evidence of allocation mismatch
 - **max pre-treatment standardized difference = 0.028** — below the 0.10 review threshold
 - **planning MDE = 3.0 pp** at 80% power / alpha 0.05 → about **8,694 required users**
-- **realized 12,000-user MDE ≈ 2.55 pp** at the observed control baseline
+- **realized allocation MDE ≈ 2.55 pp** at 80% power
+- **planning power at the observed +2.13 pp lift ≈ 64.8%**
 
-These calculations come from `src/diagnostics.py`; they are not manually typed statistical claims.
+That last point matters: a result can be statistically significant in one realized sample even when the design did not have 80% power for an effect of exactly that size.
 
 ---
 
@@ -79,10 +81,11 @@ The treatment adds a guided checklist that makes the critical setup steps explic
 - **Secondary metric:** 14-day retention
 - **Guardrail:** support ticket within seven days
 - **Planning MDE:** 3.0 percentage points
-- **Power:** 80%
+- **Target power:** 80%
 - **Primary test:** two-sided two-proportion z-test, alpha = 0.05
 - **Integrity checks:** sample-ratio mismatch + pre-treatment balance
 - **Exploratory:** device/channel, event funnel, cohort, time-to-value, revenue
+- **Sensitivity:** CUPED-style adjustment using treatment-blind pre-exposure covariates
 - **Data:** deterministic synthetic data; no real customer information
 
 See [`docs/experiment_design.md`](docs/experiment_design.md) for the analysis contract and [`docs/metric_definitions.md`](docs/metric_definitions.md) for the data model.
@@ -103,6 +106,24 @@ Instead of claiming subgroup heterogeneity because one point estimate is larger,
 **desktop-minus-mobile treatment-lift difference = +3.28 pp · p = 0.0773 · 95% CI -0.36 to +6.93 pp**
 
 That is suggestive, but not conclusive at alpha = 0.05. A mobile onboarding usability investigation is justified; a strong causal subgroup claim is not.
+
+---
+
+## CUPED-style Sensitivity Analysis
+
+The repository also demonstrates variance reduction using a **treatment-blind pre-exposure activation propensity score** built only from acquisition channel and device.
+
+Because this is a new-user onboarding experiment, there is no genuine pre-period activation outcome. This is therefore deliberately described as **CUPED-style sensitivity analysis**, not classical pre-period CUPED, and it does not replace the unadjusted primary result.
+
+| Readout | Result |
+| --- | ---: |
+| Raw activation lift | +2.13 pp |
+| Adjusted activation lift | +2.30 pp |
+| Adjusted p-value | 0.0109 |
+| Adjusted 95% CI | +0.53 to +4.08 pp |
+| Pooled outcome variance reduction | 1.47% |
+
+The adjustment is directionally consistent but only modestly reduces variance. The portfolio therefore shows the method **without overselling its value** in this dataset.
 
 ---
 
@@ -138,11 +159,13 @@ The Python layer covers:
 - deterministic experiment generation,
 - sample-ratio mismatch checks,
 - pre-treatment randomization balance,
-- pre-analysis sample-size / MDE planning,
+- explicit two-sided power calculation,
+- sample-size planning and minimum detectable effect,
+- planning power at candidate effect sizes,
 - primary / secondary / guardrail metrics,
-- two-proportion hypothesis tests,
-- confidence intervals,
+- two-proportion hypothesis tests and confidence intervals,
 - formal treatment × device interaction analysis,
+- CUPED-style sensitivity analysis,
 - and reproducible Markdown report generation.
 
 The statistical implementation uses the Python standard library so the formulas remain inspectable rather than hidden behind a large framework.
@@ -187,8 +210,10 @@ The validation layer checks both user-level and event-level contracts, including
 ├── data/
 │   └── README.md
 ├── docs/
+│   ├── analysis_checklist.md
 │   ├── experiment_design.md
-│   └── metric_definitions.md
+│   ├── metric_definitions.md
+│   └── v2_methodology.md
 ├── reports/
 │   └── experiment_summary.md
 ├── sql/
@@ -201,13 +226,16 @@ The validation layer checks both user-level and event-level contracts, including
 │   ├── 06_weekly_cohort.sql
 │   └── 07_event_latency.sql
 ├── src/
+│   ├── cuped.py
 │   ├── data_quality.py
 │   ├── diagnostics.py
 │   ├── experiment.py
 │   ├── generate_dataset.py
 │   ├── generate_events.py
+│   ├── power.py
 │   └── run_sql.py
 └── tests/
+    ├── test_advanced_experimentation.py
     └── test_pipeline.py
 ```
 
@@ -221,6 +249,8 @@ Requires Python 3.11+ and no third-party Python packages.
 python -m src.generate_dataset
 python -m src.generate_events
 python -m src.data_quality
+python -m src.power --baseline 0.5116201859 --n-control 6024 --n-treatment 5976 --effect 0.0213450082
+python -m src.cuped
 python -m src.experiment
 python -m src.run_sql
 python -m unittest discover -s tests -v
@@ -240,10 +270,12 @@ Every pull request:
 2. regenerates the 12,000-user experiment,
 3. regenerates the 41,209-row event fact table,
 4. validates user and event data contracts,
-5. regenerates experiment health + statistical evidence,
-6. diffs the generated report against the committed decision artifact,
-7. executes every analytical SQL query,
-8. and runs the expanded unit-test suite.
+5. smoke-tests the explicit power planner,
+6. smoke-tests the CUPED-style sensitivity path,
+7. regenerates experiment health + statistical evidence,
+8. diffs the generated report against the committed decision artifact,
+9. executes every analytical SQL query,
+10. and runs **16 behavioral / statistical tests**.
 
 This prevents the portfolio narrative from silently diverging from the code or generated evidence.
 
@@ -255,16 +287,16 @@ This is a **synthetic case study**, not evidence from a live production experime
 
 The generated event timestamps are a deterministic analytical representation of the synthetic user outcomes; they are not independent production telemetry. In a live system, event instrumentation, exposure logging, identity resolution, late-arriving events, bots, retries, and missing telemetry would require additional validation.
 
-Revenue and time-to-value remain supporting / descriptive metrics rather than additional confirmatory hypotheses. The device interaction is explicitly reported as exploratory because its p-value does not cross the prespecified 0.05 threshold.
+The CUPED-style covariate is constructed from known synthetic pre-exposure dimensions; it is useful for demonstrating variance-reduction mechanics but is not equivalent to a genuine frozen pre-period outcome. Revenue and time-to-value remain descriptive supporting metrics, and the device interaction remains exploratory.
 
 ---
 
 ## Next Extensions
 
-- add a simulated pre-period covariate and **CUPED-style variance reduction**,
-- add uncertainty analysis for skewed revenue using bootstrap or robust methods,
-- add a notebook-oriented reviewer walkthrough when the repository workflow supports it cleanly,
-- add exposure logging / intent-to-treat vs treatment-on-treated examples,
+- add robust / bootstrap uncertainty for skewed revenue,
+- add exposure logging and intent-to-treat vs treatment-on-treated examples,
+- add a clean executable notebook walkthrough when the repository workflow supports it without duplicate analytical logic,
+- add sequential-testing / peeking-risk examples,
 - and build a second case study focused on retention / lifecycle analysis rather than experimentation.
 
 ## License
