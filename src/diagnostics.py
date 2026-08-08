@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from statistics import NormalDist
 
 
 @dataclass(frozen=True)
@@ -34,17 +33,6 @@ class InteractionResult:
     p_value: float
     ci_low: float
     ci_high: float
-
-
-@dataclass(frozen=True)
-class PowerPlan:
-    baseline_rate: float
-    target_mde: float
-    alpha: float
-    power: float
-    required_per_variant: int
-    required_total: int
-    achieved_mde: float
 
 
 def _two_sided_p(z_score: float) -> float:
@@ -155,81 +143,4 @@ def treatment_interaction(
         p_value=_two_sided_p(z_score),
         ci_low=ci_low,
         ci_high=ci_high,
-    )
-
-
-def required_sample_size(
-    baseline_rate: float,
-    absolute_mde: float,
-    *,
-    alpha: float = 0.05,
-    power: float = 0.80,
-) -> tuple[int, int]:
-    treatment_rate = baseline_rate + absolute_mde
-    if not (0 < baseline_rate < 1 and 0 < treatment_rate < 1):
-        raise ValueError("baseline_rate and baseline_rate + absolute_mde must be in (0, 1)")
-    if absolute_mde <= 0:
-        raise ValueError("absolute_mde must be positive")
-
-    normal = NormalDist()
-    z_alpha = normal.inv_cdf(1 - alpha / 2)
-    z_power = normal.inv_cdf(power)
-    pooled = (baseline_rate + treatment_rate) / 2
-
-    numerator = (
-        z_alpha * math.sqrt(2 * pooled * (1 - pooled))
-        + z_power
-        * math.sqrt(
-            baseline_rate * (1 - baseline_rate)
-            + treatment_rate * (1 - treatment_rate)
-        )
-    ) ** 2
-    per_variant = math.ceil(numerator / (absolute_mde**2))
-    return per_variant, per_variant * 2
-
-
-def minimum_detectable_effect(
-    baseline_rate: float,
-    total_sample_size: int,
-    *,
-    alpha: float = 0.05,
-    power: float = 0.80,
-) -> float:
-    if total_sample_size < 4:
-        raise ValueError("total_sample_size must be at least 4")
-
-    low, high = 1e-6, min(0.25, 0.999 - baseline_rate)
-    for _ in range(80):
-        mid = (low + high) / 2
-        _, required_total = required_sample_size(
-            baseline_rate, mid, alpha=alpha, power=power
-        )
-        if required_total > total_sample_size:
-            low = mid
-        else:
-            high = mid
-    return high
-
-
-def power_plan(
-    baseline_rate: float,
-    total_sample_size: int,
-    *,
-    target_mde: float = 0.03,
-    alpha: float = 0.05,
-    power: float = 0.80,
-) -> PowerPlan:
-    required_per_variant, required_total = required_sample_size(
-        baseline_rate, target_mde, alpha=alpha, power=power
-    )
-    return PowerPlan(
-        baseline_rate=baseline_rate,
-        target_mde=target_mde,
-        alpha=alpha,
-        power=power,
-        required_per_variant=required_per_variant,
-        required_total=required_total,
-        achieved_mde=minimum_detectable_effect(
-            baseline_rate, total_sample_size, alpha=alpha, power=power
-        ),
     )
