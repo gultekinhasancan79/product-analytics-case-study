@@ -52,8 +52,14 @@ jobs:
       - name: Regenerate statistical readout
         run: python -m src.experiment --output artifacts/experiment_summary.md
 
-      - name: Verify committed report is reproducible
+      - name: Verify committed experiment report is reproducible
         run: diff -u reports/experiment_summary.md artifacts/experiment_summary.md
+
+      - name: Regenerate robust revenue readout
+        run: python -m src.revenue_robust --output artifacts/revenue_robustness.md
+
+      - name: Verify committed revenue report is reproducible
+        run: diff -u reports/revenue_robustness.md artifacts/revenue_robustness.md
 
       - name: Execute analytical SQL
         run: python -m src.run_sql > artifacts/sql_output.txt
