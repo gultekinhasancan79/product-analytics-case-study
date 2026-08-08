@@ -41,8 +41,17 @@ jobs:
       - name: Verify committed report is reproducible
         run: diff -u reports/experiment_summary.md artifacts/experiment_summary.md
 
+      - name: Regenerate advanced experimentation readout
+        run: python -m src.advanced_readout --output artifacts/advanced_experimentation.md
+
+      - name: Verify advanced report is reproducible
+        run: diff -u reports/advanced_experimentation.md artifacts/advanced_experimentation.md
+
       - name: Execute analytical SQL
         run: python -m src.run_sql > artifacts/sql_output.txt
+
+      - name: Execute notebook code cells
+        run: python -m src.execute_notebook
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
