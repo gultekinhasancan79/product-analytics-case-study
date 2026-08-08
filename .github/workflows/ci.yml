@@ -46,6 +46,9 @@ jobs:
       - name: Smoke-test CUPED sensitivity analysis
         run: python -m src.cuped
 
+      - name: Execute reviewer notebook walkthrough
+        run: python -m src.execute_notebook
+
       - name: Regenerate statistical readout
         run: python -m src.experiment --output artifacts/experiment_summary.md
 
