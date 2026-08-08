@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  analytics-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Compile Python sources
+        run: python -m compileall -q src tests
+
+      - name: Generate deterministic experiment data
+        run: python -m src.generate_dataset
+
+      - name: Run data-quality gates
+        run: python -m src.data_quality
+
+      - name: Regenerate statistical readout
+        run: python -m src.experiment --output artifacts/experiment_summary.md
+
+      - name: Verify committed report is reproducible
+        run: diff -u reports/experiment_summary.md artifacts/experiment_summary.md
+
+      - name: Execute analytical SQL
+        run: python -m src.run_sql > artifacts/sql_output.txt
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v

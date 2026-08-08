@@ -1,0 +1,7 @@
+[project]
+name = "product-analytics-case-study"
+version = "0.1.0"
+description = "Reproducible product analytics and A/B testing case study."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Hasancan Gultekin" }]
