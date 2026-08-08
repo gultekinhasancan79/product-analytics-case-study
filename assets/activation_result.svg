@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="260" viewBox="0 0 760 260" role="img" aria-labelledby="title desc">
+  <title id="title">7-day activation result</title>
+  <desc id="desc">Control activation is 51.16 percent and treatment activation is 53.30 percent, a 2.13 percentage point lift.</desc>
+  <rect width="760" height="260" rx="16" fill="#ffffff"/>
+  <text x="36" y="42" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#24292f">7-day activation</text>
+  <text x="36" y="68" font-family="Arial, sans-serif" font-size="14" fill="#57606a">Guided onboarding checklist experiment</text>
+
+  <text x="36" y="122" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#24292f">Control</text>
+  <rect x="150" y="100" width="460" height="30" rx="6" fill="#eaeef2"/>
+  <rect x="150" y="100" width="392" height="30" rx="6" fill="#8c959f"/>
+  <text x="625" y="122" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#24292f">51.16%</text>
+
+  <text x="36" y="180" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#24292f">Treatment</text>
+  <rect x="150" y="158" width="460" height="30" rx="6" fill="#eaeef2"/>
+  <rect x="150" y="158" width="409" height="30" rx="6" fill="#2f81f7"/>
+  <text x="625" y="180" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#0969da">53.30%</text>
+
+  <text x="150" y="224" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a7f37">+2.13 pp absolute · +4.17% relative · p = 0.0193</text>
+</svg>
