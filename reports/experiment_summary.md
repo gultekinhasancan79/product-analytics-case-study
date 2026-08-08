@@ -8,7 +8,8 @@
 - **Sample-ratio mismatch check:** p = 0.6613 — no evidence of allocation imbalance.
 - **Largest pre-treatment standardized difference:** 0.028 — comfortably below the 0.10 review threshold.
 - **Pre-analysis power target:** 3.00 pp MDE at 80% power and alpha = 0.05 requires about 8,694 users.
-- **Realized sample:** 12,000 users; approximate 80%-power MDE at the observed control baseline is +2.55 pp.
+- **Realized allocation:** approximate 80%-power MDE at the observed control baseline is +2.55 pp.
+- **Planning power at the observed +2.13 pp effect:** 64.8%. Statistical significance in this realization does not imply the design had 80% power for a 2.13 pp effect.
 
 ### Randomization balance
 
@@ -46,15 +47,27 @@
 
 > The interaction is suggestive but does not cross the 0.05 threshold. Device results remain exploratory rather than a confirmed heterogeneous treatment effect.
 
+## CUPED-style sensitivity analysis
+
+This sensitivity check adjusts activation using a treatment-blind pre-exposure propensity score built only from acquisition channel and device. Because this is a new-user experiment, it is **not** a classical pre-period outcome CUPED setup; the unadjusted primary analysis remains confirmatory.
+
+- raw activation lift: +2.13 pp
+- adjusted activation lift: +2.30 pp
+- adjusted p-value: 0.0109
+- adjusted 95% CI: +0.53 pp to +4.08 pp
+- pooled outcome variance reduction: 1.47%
+
+The adjustment is directionally consistent with the unadjusted result but produces only a modest variance reduction, so it is presented as a sensitivity analysis rather than a headline improvement.
+
 ## Interpretation
 
 - The treatment improves the primary activation metric without trading off the support burden.
 - Randomization diagnostics do not show sample-ratio mismatch or meaningful pre-treatment imbalance.
-- The realized sample exceeds the pre-analysis requirement for a 3 pp MDE; the observed effect is smaller than 3 pp but still statistically distinguishable in this realization.
-- The retention lift is directionally consistent with the activation result and statistically strong in this synthetic experiment.
-- Faster time-to-value and higher 30-day revenue are useful supporting signals, but are treated as descriptive rather than additional confirmatory tests.
+- The realized allocation supports an ~2.55 pp 80%-power MDE; the observed +2.13 pp effect had only ~64.8% planning power, despite being significant in this realized sample.
 - The desktop/mobile contrast is worth product follow-up, but the formal interaction test is not conclusive at alpha = 0.05.
+- The CUPED-style sensitivity remains positive and significant, but its 1.47% variance reduction is small and should not be oversold.
+- Revenue and time-to-value remain descriptive supporting signals rather than additional confirmatory tests.
 
 ## Reproducibility
 
-This report is generated from the deterministic synthetic dataset using `src/generate_dataset.py`, `src/diagnostics.py`, and `src/experiment.py`. CI regenerates the data and diffs this report against the committed reference output.
+This report is generated from deterministic synthetic data using `src/generate_dataset.py`, `src/diagnostics.py`, `src/power.py`, `src/cuped.py`, and `src/experiment.py`. CI regenerates the data and diffs this report against the committed reference output.
