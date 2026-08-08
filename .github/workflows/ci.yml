@@ -67,6 +67,12 @@ jobs:
       - name: Verify sequential simulation report
         run: diff -u reports/sequential_peeking.md artifacts/sequential_peeking.md
 
+      - name: Regenerate exposure assignment demo
+        run: python -m src.exposure_demo --output artifacts/exposure_itt_tot.md
+
+      - name: Verify exposure assignment report
+        run: diff -u reports/exposure_itt_tot.md artifacts/exposure_itt_tot.md
+
       - name: Execute analytical SQL
         run: python -m src.run_sql > artifacts/sql_output.txt
 
