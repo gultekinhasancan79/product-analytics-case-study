@@ -8,12 +8,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from statistics import mean
 
+from src.cuped import cuped_adjust_activation
 from src.diagnostics import (
-    power_plan,
     randomization_balance,
     sample_ratio_mismatch,
     treatment_interaction,
 )
+from src.power import minimum_detectable_effect, sample_size_per_arm, two_sided_power
 
 
 @dataclass(frozen=True)
@@ -139,13 +140,29 @@ def build_report(rows: list[dict[str, object]]) -> str:
         segment_b="mobile",
         metric="activated_7d",
     )
-    plan = power_plan(
+
+    planning_mde = 0.03
+    required_per_arm = sample_size_per_arm(
         activation.control_rate,
-        len(rows),
-        target_mde=0.03,
+        planning_mde,
+        target_power=0.80,
         alpha=0.05,
-        power=0.80,
     )
+    achieved_mde = minimum_detectable_effect(
+        activation.control_rate,
+        srm.control_n,
+        srm.treatment_n,
+        target_power=0.80,
+        alpha=0.05,
+    )
+    observed_planning_power = two_sided_power(
+        activation.control_rate,
+        activation.absolute_lift,
+        srm.control_n,
+        srm.treatment_n,
+        alpha=0.05,
+    )
+    cuped = cuped_adjust_activation(rows)
 
     decision = (
         "SHIP"
@@ -163,8 +180,9 @@ def build_report(rows: list[dict[str, object]]) -> str:
         f"- **Assignment:** {srm.control_n:,} control / {srm.treatment_n:,} treatment.",
         f"- **Sample-ratio mismatch check:** p = {srm.p_value:.4f} — no evidence of allocation imbalance.",
         f"- **Largest pre-treatment standardized difference:** {max_abs_smd:.3f} — comfortably below the 0.10 review threshold.",
-        f"- **Pre-analysis power target:** 3.00 pp MDE at 80% power and alpha = 0.05 requires about {plan.required_total:,} users.",
-        f"- **Realized sample:** {len(rows):,} users; approximate 80%-power MDE at the observed control baseline is {_pp(plan.achieved_mde)}.",
+        f"- **Pre-analysis power target:** 3.00 pp MDE at 80% power and alpha = 0.05 requires about {required_per_arm * 2:,} users.",
+        f"- **Realized allocation:** approximate 80%-power MDE at the observed control baseline is {_pp(achieved_mde)}.",
+        f"- **Planning power at the observed +2.13 pp effect:** {observed_planning_power:.1%}. Statistical significance in this realization does not imply the design had 80% power for a 2.13 pp effect.",
         "",
         "### Randomization balance",
         "",
@@ -229,18 +247,30 @@ def build_report(rows: list[dict[str, object]]) -> str:
         "",
         "> The interaction is suggestive but does not cross the 0.05 threshold. Device results remain exploratory rather than a confirmed heterogeneous treatment effect.",
         "",
+        "## CUPED-style sensitivity analysis",
+        "",
+        "This sensitivity check adjusts activation using a treatment-blind pre-exposure propensity score built only from acquisition channel and device. Because this is a new-user experiment, it is **not** a classical pre-period outcome CUPED setup; the unadjusted primary analysis remains confirmatory.",
+        "",
+        f"- raw activation lift: {_pp(cuped.raw_difference)}",
+        f"- adjusted activation lift: {_pp(cuped.adjusted_difference)}",
+        f"- adjusted p-value: {cuped.p_value:.4f}",
+        f"- adjusted 95% CI: {_pp(cuped.ci_low)} to {_pp(cuped.ci_high)}",
+        f"- pooled outcome variance reduction: {cuped.variance_reduction:.2%}",
+        "",
+        "The adjustment is directionally consistent with the unadjusted result but produces only a modest variance reduction, so it is presented as a sensitivity analysis rather than a headline improvement.",
+        "",
         "## Interpretation",
         "",
         "- The treatment improves the primary activation metric without trading off the support burden.",
         "- Randomization diagnostics do not show sample-ratio mismatch or meaningful pre-treatment imbalance.",
-        "- The realized sample exceeds the pre-analysis requirement for a 3 pp MDE; the observed effect is smaller than 3 pp but still statistically distinguishable in this realization.",
-        "- The retention lift is directionally consistent with the activation result and statistically strong in this synthetic experiment.",
-        "- Faster time-to-value and higher 30-day revenue are useful supporting signals, but are treated as descriptive rather than additional confirmatory tests.",
+        "- The realized allocation supports an ~2.55 pp 80%-power MDE; the observed +2.13 pp effect had only ~64.8% planning power, despite being significant in this realized sample.",
         "- The desktop/mobile contrast is worth product follow-up, but the formal interaction test is not conclusive at alpha = 0.05.",
+        "- The CUPED-style sensitivity remains positive and significant, but its 1.47% variance reduction is small and should not be oversold.",
+        "- Revenue and time-to-value remain descriptive supporting signals rather than additional confirmatory tests.",
         "",
         "## Reproducibility",
         "",
-        "This report is generated from the deterministic synthetic dataset using `src/generate_dataset.py`, `src/diagnostics.py`, and `src/experiment.py`. CI regenerates the data and diffs this report against the committed reference output.",
+        "This report is generated from deterministic synthetic data using `src/generate_dataset.py`, `src/diagnostics.py`, `src/power.py`, `src/cuped.py`, and `src/experiment.py`. CI regenerates the data and diffs this report against the committed reference output.",
         "",
     ]
     return "\n".join(lines)
