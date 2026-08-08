@@ -28,6 +28,8 @@ MDE is not a significance threshold. An experiment can produce a statistically s
 
 Power and MDE should therefore be used **before launch** to align the sample plan with the smallest effect worth making a product decision on.
 
+Implementation: [`src/power.py`](../src/power.py).
+
 ## 2. CUPED-style covariate adjustment
 
 Classical CUPED often uses a pre-period version of the outcome because a strongly correlated pre-treatment measure can reduce outcome variance without introducing treatment information.
@@ -59,6 +61,8 @@ The treatment effect is then estimated as the difference in adjusted means.
 - adjusted p-value: 0.0109.
 
 The variance reduction is intentionally modest because device and acquisition channel are only weak predictors of individual activation. A real pre-period behavioral measure for established users could be substantially more predictive.
+
+Implementation: [`src/cuped.py`](../src/cuped.py).
 
 ## 3. Decision discipline
 
