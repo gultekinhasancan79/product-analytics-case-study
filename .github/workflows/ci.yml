@@ -35,6 +35,17 @@ jobs:
       - name: Run user and event data-quality gates
         run: python -m src.data_quality
 
+      - name: Smoke-test experiment power planner
+        run: >-
+          python -m src.power
+          --baseline 0.5116201859
+          --n-control 6024
+          --n-treatment 5976
+          --effect 0.0213450082
+
+      - name: Smoke-test CUPED sensitivity analysis
+        run: python -m src.cuped
+
       - name: Regenerate statistical readout
         run: python -m src.experiment --output artifacts/experiment_summary.md
 
