@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from src.cuped import cuped_adjust_activation, pre_treatment_activation_score
+from src.execute_notebook import execute_notebook
 from src.experiment import two_proportion_test
 from src.generate_dataset import generate_users
 from src.power import minimum_detectable_effect, sample_size_per_arm, two_sided_power
@@ -67,6 +69,14 @@ class AdvancedExperimentationTests(unittest.TestCase):
         self.assertLess(result.p_value, 0.05)
         self.assertGreater(result.ci_low, 0)
         self.assertGreater(result.adjusted_difference, result.raw_difference)
+
+    def test_notebook_walkthrough_executes_on_tested_code_path(self) -> None:
+        notebook = (
+            Path(__file__).resolve().parents[1]
+            / "notebooks"
+            / "experiment_walkthrough.ipynb"
+        )
+        self.assertEqual(execute_notebook(notebook), 5)
 
 
 if __name__ == "__main__":

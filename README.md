@@ -11,6 +11,7 @@
   <img src="https://img.shields.io/badge/A%2FB%20Testing-Power%20%2B%20SRM-7C3AED" alt="A/B Testing">
   <img src="https://img.shields.io/badge/Event%20Model-41k%2B%20Events-0F766E" alt="Event model">
   <img src="https://img.shields.io/badge/Sensitivity-CUPED--style-6D28D9" alt="CUPED-style sensitivity">
+  <img src="https://img.shields.io/badge/Notebook-Executed%20in%20CI-F37626?logo=jupyter&logoColor=white" alt="Notebook executed in CI">
   <img src="https://img.shields.io/badge/Data-Synthetic%20%26%20Deterministic-2ea44f" alt="Synthetic deterministic data">
   <img src="https://img.shields.io/badge/License-MIT-2ea44f" alt="MIT License">
 </p>
@@ -127,6 +128,23 @@ The adjustment is directionally consistent but only modestly reduces variance. T
 
 ---
 
+## Executable Reviewer Walkthrough
+
+[`notebooks/experiment_walkthrough.ipynb`](notebooks/experiment_walkthrough.ipynb) provides a compact reviewer path through the experiment without duplicating statistical formulas in notebook-only code.
+
+The notebook imports the same tested modules used by the pipeline and walks through:
+
+- primary activation effect and confidence interval,
+- sample-ratio mismatch and pre-treatment balance,
+- formal desktop-vs-mobile interaction,
+- realized MDE and planning power at the observed effect,
+- required sample for a +2.00 pp target effect,
+- and CUPED-style variance-reduction sensitivity.
+
+CI parses and executes all five notebook code cells through `src/execute_notebook.py`. This keeps the notebook on the tested code path while preserving the project's zero-third-party-runtime-dependency design.
+
+---
+
 ## Data Model
 
 The project deliberately contains both a randomized-user table and a product-event table.
@@ -166,6 +184,7 @@ The Python layer covers:
 - two-proportion hypothesis tests and confidence intervals,
 - formal treatment × device interaction analysis,
 - CUPED-style sensitivity analysis,
+- executable notebook validation,
 - and reproducible Markdown report generation.
 
 The statistical implementation uses the Python standard library so the formulas remain inspectable rather than hidden behind a large framework.
@@ -214,6 +233,8 @@ The validation layer checks both user-level and event-level contracts, including
 │   ├── experiment_design.md
 │   ├── metric_definitions.md
 │   └── v2_methodology.md
+├── notebooks/
+│   └── experiment_walkthrough.ipynb
 ├── reports/
 │   └── experiment_summary.md
 ├── sql/
@@ -229,6 +250,7 @@ The validation layer checks both user-level and event-level contracts, including
 │   ├── cuped.py
 │   ├── data_quality.py
 │   ├── diagnostics.py
+│   ├── execute_notebook.py
 │   ├── experiment.py
 │   ├── generate_dataset.py
 │   ├── generate_events.py
@@ -251,6 +273,7 @@ python -m src.generate_events
 python -m src.data_quality
 python -m src.power --baseline 0.5116201859 --n-control 6024 --n-treatment 5976 --effect 0.0213450082
 python -m src.cuped
+python -m src.execute_notebook
 python -m src.experiment
 python -m src.run_sql
 python -m unittest discover -s tests -v
@@ -272,12 +295,13 @@ Every pull request:
 4. validates user and event data contracts,
 5. smoke-tests the explicit power planner,
 6. smoke-tests the CUPED-style sensitivity path,
-7. regenerates experiment health + statistical evidence,
-8. diffs the generated report against the committed decision artifact,
-9. executes every analytical SQL query,
-10. and runs **16 behavioral / statistical tests**.
+7. executes the five-cell reviewer notebook on the tested module path,
+8. regenerates experiment health + statistical evidence,
+9. diffs the generated report against the committed decision artifact,
+10. executes every analytical SQL query,
+11. and runs **17 behavioral / statistical tests**.
 
-This prevents the portfolio narrative from silently diverging from the code or generated evidence.
+This prevents the portfolio narrative and notebook from silently diverging from the code or generated evidence.
 
 ---
 
@@ -295,7 +319,6 @@ The CUPED-style covariate is constructed from known synthetic pre-exposure dimen
 
 - add robust / bootstrap uncertainty for skewed revenue,
 - add exposure logging and intent-to-treat vs treatment-on-treated examples,
-- add a clean executable notebook walkthrough when the repository workflow supports it without duplicate analytical logic,
 - add sequential-testing / peeking-risk examples,
 - and build a second case study focused on retention / lifecycle analysis rather than experimentation.
 
