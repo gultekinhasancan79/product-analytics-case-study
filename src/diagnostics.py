@@ -211,6 +211,44 @@ def minimum_detectable_effect(
     return high
 
 
+def two_sided_power(
+    baseline_rate: float,
+    absolute_effect: float,
+    control_n: int,
+    treatment_n: int,
+    *,
+    alpha: float = 0.05,
+) -> float:
+    """Approximate power at a specified treatment effect for a two-sided z-test."""
+    treatment_rate = baseline_rate + absolute_effect
+    if not (0 < baseline_rate < 1 and 0 < treatment_rate < 1):
+        raise ValueError("baseline_rate and baseline_rate + absolute_effect must be in (0, 1)")
+    if control_n < 2 or treatment_n < 2:
+        raise ValueError("both experiment arms require at least two observations")
+    if not 0 < alpha < 1:
+        raise ValueError("alpha must be in (0, 1)")
+
+    pooled = (
+        control_n * baseline_rate + treatment_n * treatment_rate
+    ) / (control_n + treatment_n)
+    null_se = math.sqrt(
+        pooled * (1 - pooled) * (1 / control_n + 1 / treatment_n)
+    )
+    alternative_se = math.sqrt(
+        baseline_rate * (1 - baseline_rate) / control_n
+        + treatment_rate * (1 - treatment_rate) / treatment_n
+    )
+    critical_difference = NormalDist().inv_cdf(1 - alpha / 2) * null_se
+
+    upper_tail = 1 - NormalDist().cdf(
+        (critical_difference - absolute_effect) / alternative_se
+    )
+    lower_tail = NormalDist().cdf(
+        (-critical_difference - absolute_effect) / alternative_se
+    )
+    return min(max(upper_tail + lower_tail, 0.0), 1.0)
+
+
 def power_plan(
     baseline_rate: float,
     total_sample_size: int,
