@@ -3,10 +3,8 @@ from __future__ import annotations
 import argparse
 import math
 from dataclasses import dataclass
-from statistics import mean, variance
 from pathlib import Path
-
-from src.experiment import load_users
+from statistics import mean, variance
 
 _CHANNEL_CONNECT = {
     "organic": 0.02,
@@ -138,6 +136,8 @@ def cuped_adjust_activation(rows: list[dict[str, object]]) -> CupedResult:
 
 
 def main() -> None:
+    from src.experiment import load_users
+
     parser = argparse.ArgumentParser(description="Run CUPED-style activation sensitivity analysis.")
     parser.add_argument("--input", type=Path, default=Path("artifacts/users.csv"))
     args = parser.parse_args()
