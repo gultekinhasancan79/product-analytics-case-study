@@ -61,6 +61,12 @@ jobs:
       - name: Verify committed revenue report is reproducible
         run: diff -u reports/revenue_robustness.md artifacts/revenue_robustness.md
 
+      - name: Regenerate sequential simulation
+        run: python -m src.sequential --output artifacts/sequential_peeking.md
+
+      - name: Verify sequential simulation report
+        run: diff -u reports/sequential_peeking.md artifacts/sequential_peeking.md
+
       - name: Execute analytical SQL
         run: python -m src.run_sql > artifacts/sql_output.txt
 
