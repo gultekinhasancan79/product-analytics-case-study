@@ -15,7 +15,30 @@ The primary test is two-sided. A product decision can still use directionality a
 
 The synthetic generator assigns users independently to control or treatment with approximately 50/50 probability.
 
-The user/signup is the unit of randomization and the unit of analysis. No repeated-user observations are introduced.
+The user/signup is the unit of randomization and the unit of analysis. No repeated-user observations are introduced in the experiment table. A separate event fact table is generated for funnel and timing analysis, but those events remain linked to the same randomized user.
+
+## Pre-analysis power plan
+
+The planning target is:
+
+- **baseline activation:** approximately 51%,
+- **minimum detectable effect:** 3.0 percentage points absolute,
+- **alpha:** 0.05, two-sided,
+- **power:** 80%,
+- **allocation:** 50/50.
+
+At the realized control baseline, detecting a 3.0 pp lift requires approximately **8,694 total users** under the normal approximation. The case study uses 12,000 users, corresponding to an approximate 80%-power MDE of **2.55 pp** at that baseline.
+
+The power calculation is implemented in `src/diagnostics.py` rather than being a hand-written portfolio claim.
+
+## Experiment integrity checks
+
+Outcome analysis is preceded by two diagnostics:
+
+1. **Sample-ratio mismatch (SRM):** compares observed treatment/control counts with the planned 50/50 allocation.
+2. **Randomization balance:** reports standardized differences for pre-treatment device and acquisition-channel dimensions.
+
+The balance review threshold is `|standardized difference| < 0.10`. A breach would trigger investigation before interpreting treatment effects.
 
 ## Metrics
 
@@ -36,7 +59,9 @@ The user/signup is the unit of randomization and the unit of analysis. No repeat
 - mean time-to-value among activated users,
 - mean 30-day revenue per signup,
 - activation by device,
-- activation / revenue by acquisition channel.
+- activation / revenue by acquisition channel,
+- event-based funnel conversion,
+- weekly signup-cohort diagnostics.
 
 ## Statistical method
 
@@ -62,11 +87,17 @@ The generated report marks the treatment **SHIP** when:
 
 This is intentionally stricter than using the primary p-value alone.
 
+## Heterogeneous treatment effects
+
+The device split is explicitly exploratory. The repository calculates a formal **difference-in-differences interaction contrast** between desktop and mobile treatment lifts, with a normal-approximation confidence interval and p-value.
+
+This avoids the common mistake of declaring subgroup heterogeneity merely because one subgroup is individually significant and another is not.
+
 ## Multiplicity and interpretation
 
 The primary activation metric is the confirmatory outcome.
 
-Retention and support tickets provide important supporting evidence, while revenue, time-to-value, and segment cuts are treated as descriptive / exploratory. Device and channel cuts should not be interpreted as confirmed heterogeneous treatment effects without dedicated interaction tests and adequate power.
+Retention and support tickets provide important supporting evidence, while revenue, time-to-value, channel cuts, cohort cuts, and event-latency analysis are treated as descriptive / exploratory. Exploratory results should not be promoted to additional causal claims without a dedicated analysis plan and appropriate multiplicity control.
 
 ## Synthetic-data disclosure
 

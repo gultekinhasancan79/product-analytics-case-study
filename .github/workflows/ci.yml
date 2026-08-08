@@ -26,10 +26,13 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q src tests
 
-      - name: Generate deterministic experiment data
+      - name: Generate deterministic user experiment data
         run: python -m src.generate_dataset
 
-      - name: Run data-quality gates
+      - name: Generate deterministic event fact data
+        run: python -m src.generate_events
+
+      - name: Run user and event data-quality gates
         run: python -m src.data_quality
 
       - name: Regenerate statistical readout

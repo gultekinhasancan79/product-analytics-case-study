@@ -6,7 +6,11 @@ import sqlite3
 from pathlib import Path
 
 
-def load_database(csv_path: Path, schema_path: Path) -> sqlite3.Connection:
+def load_database(
+    csv_path: Path,
+    schema_path: Path,
+    events_path: Path | None = None,
+) -> sqlite3.Connection:
     connection = sqlite3.connect(":memory:")
     connection.executescript(schema_path.read_text(encoding="utf-8"))
 
@@ -34,6 +38,24 @@ def load_database(csv_path: Path, schema_path: Path) -> sqlite3.Connection:
         "INSERT INTO product_users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         rows,
     )
+
+    if events_path is not None and events_path.exists():
+        with events_path.open(newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            events = [
+                (
+                    row["event_id"],
+                    row["user_id"],
+                    row["event_name"],
+                    row["event_ts"],
+                    None if row["event_value"] == "" else float(row["event_value"]),
+                )
+                for row in reader
+            ]
+        connection.executemany(
+            "INSERT INTO product_events VALUES (?, ?, ?, ?, ?)",
+            events,
+        )
     return connection
 
 
@@ -60,13 +82,18 @@ def format_table(columns: list[str], rows: list[tuple[object, ...]]) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Execute the portfolio SQL against the generated dataset."
+        description="Execute the portfolio SQL against the generated datasets."
     )
     parser.add_argument("--input", type=Path, default=Path("artifacts/users.csv"))
+    parser.add_argument("--events", type=Path, default=Path("artifacts/events.csv"))
     parser.add_argument("--sql-dir", type=Path, default=Path("sql"))
     args = parser.parse_args()
 
-    connection = load_database(args.input, args.sql_dir / "00_schema.sql")
+    connection = load_database(
+        args.input,
+        args.sql_dir / "00_schema.sql",
+        events_path=args.events,
+    )
     for query_path in sorted(args.sql_dir.glob("[0-9][1-9]_*.sql")):
         columns, rows = run_query(connection, query_path)
         print(f"\n## {query_path.name}\n")

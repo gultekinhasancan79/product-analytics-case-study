@@ -4,6 +4,7 @@ all: generate quality analyze sql test
 
 generate:
 	python -m src.generate_dataset
+	python -m src.generate_events
 
 quality:
 	python -m src.data_quality

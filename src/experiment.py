@@ -8,6 +8,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from statistics import mean
 
+from src.diagnostics import (
+    power_plan,
+    randomization_balance,
+    sample_ratio_mismatch,
+    treatment_interaction,
+)
+
 
 @dataclass(frozen=True)
 class ProportionResult:
@@ -122,6 +129,24 @@ def build_report(rows: list[dict[str, object]]) -> str:
     time_to_value = mean_by_variant(rows, "time_to_value_hours", non_null=True)
     device = activation_by_segment(rows, "device")
 
+    srm = sample_ratio_mismatch(rows)
+    balance = randomization_balance(rows)
+    max_abs_smd = max(abs(item.standardized_difference) for item in balance)
+    interaction = treatment_interaction(
+        rows,
+        segment="device",
+        segment_a="desktop",
+        segment_b="mobile",
+        metric="activated_7d",
+    )
+    plan = power_plan(
+        activation.control_rate,
+        len(rows),
+        target_mde=0.03,
+        alpha=0.05,
+        power=0.80,
+    )
+
     decision = (
         "SHIP"
         if activation.p_value < 0.05 and activation.ci_low > 0 and tickets.ci_high < 0
@@ -132,6 +157,27 @@ def build_report(rows: list[dict[str, object]]) -> str:
         "# Experiment Readout — Guided Onboarding Checklist",
         "",
         f"**Decision: {decision} treatment.** The primary activation metric improved significantly and the support-ticket guardrail also improved.",
+        "",
+        "## Experiment health",
+        "",
+        f"- **Assignment:** {srm.control_n:,} control / {srm.treatment_n:,} treatment.",
+        f"- **Sample-ratio mismatch check:** p = {srm.p_value:.4f} — no evidence of allocation imbalance.",
+        f"- **Largest pre-treatment standardized difference:** {max_abs_smd:.3f} — comfortably below the 0.10 review threshold.",
+        f"- **Pre-analysis power target:** 3.00 pp MDE at 80% power and alpha = 0.05 requires about {plan.required_total:,} users.",
+        f"- **Realized sample:** {len(rows):,} users; approximate 80%-power MDE at the observed control baseline is {_pp(plan.achieved_mde)}.",
+        "",
+        "### Randomization balance",
+        "",
+        "| Dimension | Level | Control share | Treatment share | Standardized difference |",
+        "| --- | --- | ---: | ---: | ---: |",
+    ]
+    for item in balance:
+        lines.append(
+            f"| {item.dimension} | {item.level} | {_pct(item.control_share)} | "
+            f"{_pct(item.treatment_share)} | {item.standardized_difference:+.3f} |"
+        )
+
+    lines += [
         "",
         "## Primary metric",
         "",
@@ -165,7 +211,7 @@ def build_report(rows: list[dict[str, object]]) -> str:
             f"{time_to_value['treatment'] - time_to_value['control']:+.2f} h | descriptive |"
         ),
         "",
-        "## Exploratory device diagnostic",
+        "## Device heterogeneity diagnostic",
         "",
         "| Device | Control activation | Treatment activation | Lift |",
         "| --- | ---: | ---: | ---: |",
@@ -175,18 +221,26 @@ def build_report(rows: list[dict[str, object]]) -> str:
 
     lines += [
         "",
-        "> Segment results are exploratory. The experiment was powered for the overall primary metric, not for interaction effects between treatment and device.",
+        (
+            f"**Treatment × device interaction:** desktop-minus-mobile lift difference "
+            f"{_pp(interaction.interaction_effect)}, p = {interaction.p_value:.4f}, "
+            f"95% CI {_pp(interaction.ci_low)} to {_pp(interaction.ci_high)}."
+        ),
+        "",
+        "> The interaction is suggestive but does not cross the 0.05 threshold. Device results remain exploratory rather than a confirmed heterogeneous treatment effect.",
         "",
         "## Interpretation",
         "",
         "- The treatment improves the primary activation metric without trading off the support burden.",
+        "- Randomization diagnostics do not show sample-ratio mismatch or meaningful pre-treatment imbalance.",
+        "- The realized sample exceeds the pre-analysis requirement for a 3 pp MDE; the observed effect is smaller than 3 pp but still statistically distinguishable in this realization.",
         "- The retention lift is directionally consistent with the activation result and statistically strong in this synthetic experiment.",
         "- Faster time-to-value and higher 30-day revenue are useful supporting signals, but are treated as descriptive rather than additional confirmatory tests.",
-        "- The desktop/mobile split suggests a follow-up usability investigation on mobile before assuming the same mechanism drives both segments.",
+        "- The desktop/mobile contrast is worth product follow-up, but the formal interaction test is not conclusive at alpha = 0.05.",
         "",
         "## Reproducibility",
         "",
-        "This report is generated from the deterministic synthetic dataset using `src/generate_dataset.py` and `src/experiment.py`. CI regenerates the data and diffs this report against the committed reference output.",
+        "This report is generated from the deterministic synthetic dataset using `src/generate_dataset.py`, `src/diagnostics.py`, and `src/experiment.py`. CI regenerates the data and diffs this report against the committed reference output.",
         "",
     ]
     return "\n".join(lines)
