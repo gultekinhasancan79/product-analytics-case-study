@@ -1,7 +1,7 @@
 <h1 align="center">Product Analytics Case Study</h1>
 
 <p align="center">
-  Experiment design, integrity diagnostics, event analytics, power planning, sensitivity analysis, SQL, data-quality gates, and a decision-ready product readout.
+  Reproducible product experimentation, event analytics, statistical diagnostics, robust inference, and decision-ready communication.
 </p>
 
 <p align="center">
@@ -10,111 +10,71 @@
   <img src="https://img.shields.io/badge/SQL-Executable%20in%20CI-336791?logo=postgresql&logoColor=white" alt="SQL">
   <img src="https://img.shields.io/badge/A%2FB%20Testing-Power%20%2B%20SRM-7C3AED" alt="A/B Testing">
   <img src="https://img.shields.io/badge/Event%20Model-41k%2B%20Events-0F766E" alt="Event model">
-  <img src="https://img.shields.io/badge/Sensitivity-CUPED--style-6D28D9" alt="CUPED-style sensitivity">
   <img src="https://img.shields.io/badge/Notebook-Executed%20in%20CI-F37626?logo=jupyter&logoColor=white" alt="Notebook executed in CI">
   <img src="https://img.shields.io/badge/Data-Synthetic%20%26%20Deterministic-2ea44f" alt="Synthetic deterministic data">
-  <img src="https://img.shields.io/badge/License-MIT-2ea44f" alt="MIT License">
 </p>
 
 ---
 
 ## Executive Summary
 
-This repository is an end-to-end **product analytics and experimentation case study** built around a fictional SaaS onboarding experiment.
+This repository is an end-to-end **product analytics and experimentation portfolio case study** built around a fictional B2B SaaS onboarding experiment.
 
-The product team is testing a **guided onboarding checklist** against the existing onboarding flow:
+The product question is:
 
-> Does guided onboarding increase the share of new users who reach activation within seven days, without increasing support burden?
+> Does a guided onboarding checklist increase seven-day activation without increasing support burden?
 
-The analysis uses a deterministic synthetic dataset of **12,000 randomized signups** plus a deterministic **41,209-row product-event fact table**, so the experiment and event-analysis results can be regenerated from source.
+The core analysis uses **12,000 randomized signups** and a deterministic **41,209-row product-event fact table**. Every headline result is generated from source and checked in CI.
 
-### Decision
+### Product decision
 
-**Ship the treatment**, while treating the weaker mobile response and variance-reduction analysis as supporting diagnostics rather than replacements for the pre-specified primary analysis.
+**Ship the treatment**, while keeping subgroup, revenue, variance-reduction, sequential-testing, and compliance analyses in their appropriate supporting roles.
 
 | Metric | Control | Treatment | Lift | Statistical read |
 | --- | ---: | ---: | ---: | --- |
-| **7-day activation — primary** | 51.16% | 53.30% | **+2.13 pp** | p = 0.0193; 95% CI +0.35 to +3.92 pp |
+| **7-day activation — primary** | 51.16% | 53.30% | **+2.13 pp** | p = 0.0193 · 95% CI +0.35 to +3.92 pp |
 | 14-day retention | 39.34% | 42.52% | **+3.18 pp** | p = 0.0004 |
 | Support ticket within 7 days — guardrail | 9.94% | 8.53% | **-1.41 pp** | p = 0.0077 |
-| Mean 30-day revenue / signup | $21.42 | $22.94 | +$1.52 | descriptive |
+| Mean 30-day revenue / signup | $21.42 | $22.94 | +$1.52 | supporting / robust analysis below |
 | Mean time-to-value among activated users | 20.15 h | 17.77 h | -2.38 h | descriptive |
 
 <p align="center">
   <img src="assets/activation_result.svg" alt="7-day activation result" width="760">
 </p>
 
-### Experiment health & planning
+---
 
-The positive result is not interpreted before checking assignment integrity and design sensitivity:
+## Experiment Integrity & Planning
+
+Outcome interpretation starts only after assignment and design checks:
 
 - **6,024 control / 5,976 treatment**
-- **SRM p = 0.6613** — no evidence of allocation mismatch
-- **max pre-treatment standardized difference = 0.028** — below the 0.10 review threshold
-- **planning MDE = 3.0 pp** at 80% power / alpha 0.05 → about **8,694 required users**
-- **realized allocation MDE ≈ 2.55 pp** at 80% power
-- **planning power at the observed +2.13 pp lift ≈ 64.8%**
+- **SRM p = 0.6613** — no evidence of sample-ratio mismatch
+- **max pre-treatment |SMD| = 0.028** — below the 0.10 review threshold
+- **planning target:** 3.0 pp MDE · 80% power · two-sided alpha 0.05
+- **required sample for that target:** about 8,694 users total
+- **realized 80%-power MDE:** about **2.55 pp**
+- **planning power at the observed +2.13 pp effect:** about **64.8%**
 
-That last point matters: a result can be statistically significant in one realized sample even when the design did not have 80% power for an effect of exactly that size.
+The distinction matters: one realized sample can be statistically significant even when the design did not have 80% power for an effect of exactly that size.
 
----
-
-## Product & Experiment Context
-
-### Product
-
-A fictional B2B analytics product where new users typically need to:
-
-1. connect a data source,
-2. create their first dashboard,
-3. reach a useful first outcome,
-4. and return after onboarding.
-
-### Treatment
-
-The treatment adds a guided checklist that makes the critical setup steps explicit and keeps onboarding progress visible.
-
-### Experiment contract
-
-- **Unit of randomization:** signup / user
-- **Allocation:** approximately 50/50 control vs treatment
-- **Primary metric:** 7-day activation
-- **Secondary metric:** 14-day retention
-- **Guardrail:** support ticket within seven days
-- **Planning MDE:** 3.0 percentage points
-- **Target power:** 80%
-- **Primary test:** two-sided two-proportion z-test, alpha = 0.05
-- **Integrity checks:** sample-ratio mismatch + pre-treatment balance
-- **Exploratory:** device/channel, event funnel, cohort, time-to-value, revenue
-- **Sensitivity:** CUPED-style adjustment using treatment-blind pre-exposure covariates
-- **Data:** deterministic synthetic data; no real customer information
-
-See [`docs/experiment_design.md`](docs/experiment_design.md) for the analysis contract and [`docs/metric_definitions.md`](docs/metric_definitions.md) for the data model.
+See [`docs/experiment_design.md`](docs/experiment_design.md) and [`docs/v2_methodology.md`](docs/v2_methodology.md).
 
 ---
 
-## Heterogeneity Diagnostic
+## Advanced Experimentation Evidence
 
-The overall treatment wins, but the device split is not uniform:
+### Treatment × device interaction
 
-| Device | Control activation | Treatment activation | Lift |
-| --- | ---: | ---: | ---: |
-| Desktop | 54.64% | 58.15% | **+3.51 pp** |
-| Mobile | 45.68% | 45.90% | **+0.23 pp** |
+Desktop shows a larger point estimate than mobile, but the project does not infer heterogeneity from separate subgroup p-values.
 
-Instead of claiming subgroup heterogeneity because one point estimate is larger, the project computes a formal interaction contrast:
+**Desktop-minus-mobile treatment-lift interaction:** **+3.28 pp · p = 0.0773 · 95% CI -0.36 to +6.93 pp**.
 
-**desktop-minus-mobile treatment-lift difference = +3.28 pp · p = 0.0773 · 95% CI -0.36 to +6.93 pp**
+That is suggestive rather than conclusive at alpha = 0.05.
 
-That is suggestive, but not conclusive at alpha = 0.05. A mobile onboarding usability investigation is justified; a strong causal subgroup claim is not.
+### CUPED-style sensitivity
 
----
-
-## CUPED-style Sensitivity Analysis
-
-The repository also demonstrates variance reduction using a **treatment-blind pre-exposure activation propensity score** built only from acquisition channel and device.
-
-Because this is a new-user onboarding experiment, there is no genuine pre-period activation outcome. This is therefore deliberately described as **CUPED-style sensitivity analysis**, not classical pre-period CUPED, and it does not replace the unadjusted primary result.
+A treatment-blind pre-exposure propensity score uses only acquisition channel and device. Because these are new users, there is no genuine pre-period activation outcome; this is deliberately described as **CUPED-style sensitivity**, not classical pre-period CUPED.
 
 | Readout | Result |
 | --- | ---: |
@@ -122,32 +82,57 @@ Because this is a new-user onboarding experiment, there is no genuine pre-period
 | Adjusted activation lift | +2.30 pp |
 | Adjusted p-value | 0.0109 |
 | Adjusted 95% CI | +0.53 to +4.08 pp |
-| Pooled outcome variance reduction | 1.47% |
+| Outcome variance reduction | 1.47% |
 
-The adjustment is directionally consistent but only modestly reduces variance. The portfolio therefore shows the method **without overselling its value** in this dataset.
+The unadjusted primary analysis remains confirmatory.
+
+### Robust revenue inference
+
+Revenue is zero-inflated and right-skewed, so the repository does not rely only on a normal-theory mean comparison.
+
+| Revenue readout | Result |
+| --- | ---: |
+| Mean treatment-control difference | **+$1.52 / signup** |
+| 2,000-draw percentile-bootstrap 95% CI | **+$0.78 to +$2.30** |
+| Bootstrap draws with positive lift | 100.0% |
+| 10% trimmed-mean difference | +$1.79 |
+| 5% winsorized-mean difference | +$1.49 |
+
+Revenue remains a supporting metric rather than a retroactively promoted primary outcome. Full evidence: [`reports/revenue_robustness.md`](reports/revenue_robustness.md).
+
+### Sequential testing / peeking risk
+
+A separate deterministic **null simulation** shows why repeatedly using the same fixed-horizon `p < 0.05` rule while peeking can inflate Type-I error.
+
+| Rule | Simulated false-positive rate |
+| --- | ---: |
+| Final-horizon test only | 4.4% |
+| Naive repeated looks at p < 0.05 | **23.5%** |
+| Repeated looks with conservative Bonferroni allocation | 1.1% |
+
+This is an educational design-discipline simulation; it is **not** a stopping rule retrofitted onto the onboarding experiment. Full evidence: [`reports/sequential_peeking.md`](reports/sequential_peeking.md).
+
+### Exposure logging — ITT vs treatment-on-treated
+
+A separate 100,000-user compliance simulation demonstrates why randomized **assignment** and observed **exposure** are different analysis objects.
+
+| Estimand / comparison | Result |
+| --- | ---: |
+| Treatment exposure rate | 78.1% |
+| **ITT: assigned treatment - assigned control** | **+4.98 pp** |
+| Naive exposed-treatment - control | +7.30 pp |
+| Wald / IV treatment-on-treated estimate | +6.38 pp |
+| True simulated exposure effect | +6.00 pp |
+
+Device affects both compliance and baseline activation, so conditioning on observed exposure changes the population mix and breaks the original randomized comparison. The IV/Wald example is reported only under its explicit one-sided non-compliance, monotonicity, and exclusion-restriction assumptions.
+
+Full evidence: [`reports/exposure_itt_tot.md`](reports/exposure_itt_tot.md).
 
 ---
 
-## Executable Reviewer Walkthrough
+## Event Analytics & SQL
 
-[`notebooks/experiment_walkthrough.ipynb`](notebooks/experiment_walkthrough.ipynb) provides a compact reviewer path through the experiment without duplicating statistical formulas in notebook-only code.
-
-The notebook imports the same tested modules used by the pipeline and walks through:
-
-- primary activation effect and confidence interval,
-- sample-ratio mismatch and pre-treatment balance,
-- formal desktop-vs-mobile interaction,
-- realized MDE and planning power at the observed effect,
-- required sample for a +2.00 pp target effect,
-- and CUPED-style variance-reduction sensitivity.
-
-CI parses and executes all five notebook code cells through `src/execute_notebook.py`. This keeps the notebook on the tested code path while preserving the project's zero-third-party-runtime-dependency design.
-
----
-
-## Data Model
-
-The project deliberately contains both a randomized-user table and a product-event table.
+The project contains both randomized-user outcomes and a linked product-event table.
 
 ```text
 product_users                         product_events
@@ -162,60 +147,43 @@ support_ticket_7d
 revenue_30d
 ```
 
-`src/generate_dataset.py` creates the experiment-level outcomes. `src/generate_events.py` then materializes deterministic product events such as `signup`, `data_connected`, `dashboard_created`, `support_ticket_opened`, and `active_day_14`.
+The SQL layer is executable in CI and covers:
 
-This lets the portfolio demonstrate both **experiment readouts** and **event-style funnel / timing analytics**.
+- activation funnel readouts,
+- experiment KPI tables,
+- device and acquisition-channel diagnostics,
+- event-based funnel conversion,
+- weekly signup cohorts,
+- and latency from signup to dashboard creation.
+
+The data-quality layer validates user/event IDs, domains, funnel invariants, event ordering, referential integrity, outcome windows, and reconciliation between event presence and user-level metrics.
 
 ---
 
-## Analysis Layers
+## Executable Reviewer Notebook
 
-### Experimentation / Python
+[`notebooks/experiment_walkthrough.ipynb`](notebooks/experiment_walkthrough.ipynb) gives a compact reviewer path through:
 
-The Python layer covers:
+- the primary treatment effect,
+- SRM and pre-treatment balance,
+- device interaction inference,
+- MDE and planning power,
+- required sample size,
+- and CUPED-style sensitivity.
 
-- deterministic experiment generation,
-- sample-ratio mismatch checks,
-- pre-treatment randomization balance,
-- explicit two-sided power calculation,
-- sample-size planning and minimum detectable effect,
-- planning power at candidate effect sizes,
-- primary / secondary / guardrail metrics,
-- two-proportion hypothesis tests and confidence intervals,
-- formal treatment × device interaction analysis,
-- CUPED-style sensitivity analysis,
-- executable notebook validation,
-- and reproducible Markdown report generation.
+The notebook imports the same tested repository modules instead of duplicating formulas. CI executes every code cell through `src/execute_notebook.py`.
 
-The statistical implementation uses the Python standard library so the formulas remain inspectable rather than hidden behind a large framework.
+---
 
-### Product SQL
+## Reproducible Evidence
 
-The SQL layer contains executable queries for:
-
-- user-level activation funnel readouts,
-- experiment KPI tables,
-- device and acquisition-channel diagnostics,
-- **event-based funnel conversion**,
-- **weekly signup cohorts**,
-- and **event latency from signup to dashboard creation**.
-
-CI loads both generated tables into an in-memory relational database and executes every analytical SQL file.
-
-### Data Quality
-
-The validation layer checks both user-level and event-level contracts, including:
-
-- required columns and valid domains,
-- unique user and event identifiers,
-- experiment dimensions,
-- impossible funnel states,
-- non-negative revenue,
-- event → user referential integrity,
-- expected event cardinality,
-- event ordering,
-- seven-day activation/support windows,
-- and agreement between event presence and user-level metrics.
+| Artifact | Purpose |
+| --- | --- |
+| [`reports/experiment_summary.md`](reports/experiment_summary.md) | Primary decision, integrity, power, interaction, CUPED |
+| [`reports/revenue_robustness.md`](reports/revenue_robustness.md) | Bootstrap + trimmed/winsorized revenue sensitivity |
+| [`reports/sequential_peeking.md`](reports/sequential_peeking.md) | Repeated-look Type-I error simulation |
+| [`reports/exposure_itt_tot.md`](reports/exposure_itt_tot.md) | Assignment, exposure, ITT and treatment-on-treated demo |
+| [`notebooks/experiment_walkthrough.ipynb`](notebooks/experiment_walkthrough.ipynb) | Reviewer-oriented executable walkthrough |
 
 ---
 
@@ -226,8 +194,6 @@ The validation layer checks both user-level and event-level contracts, including
 ├── .github/workflows/ci.yml
 ├── assets/
 │   └── activation_result.svg
-├── data/
-│   └── README.md
 ├── docs/
 │   ├── analysis_checklist.md
 │   ├── experiment_design.md
@@ -236,7 +202,10 @@ The validation layer checks both user-level and event-level contracts, including
 ├── notebooks/
 │   └── experiment_walkthrough.ipynb
 ├── reports/
-│   └── experiment_summary.md
+│   ├── experiment_summary.md
+│   ├── exposure_itt_tot.md
+│   ├── revenue_robustness.md
+│   └── sequential_peeking.md
 ├── sql/
 │   ├── 00_schema.sql
 │   ├── 01_activation_funnel.sql
@@ -252,20 +221,27 @@ The validation layer checks both user-level and event-level contracts, including
 │   ├── diagnostics.py
 │   ├── execute_notebook.py
 │   ├── experiment.py
+│   ├── exposure_demo.py
 │   ├── generate_dataset.py
 │   ├── generate_events.py
 │   ├── power.py
-│   └── run_sql.py
+│   ├── revenue_robust.py
+│   ├── run_sql.py
+│   └── sequential.py
 └── tests/
     ├── test_advanced_experimentation.py
-    └── test_pipeline.py
+    ├── test_exposure_demo.py
+    ├── test_notebook.py
+    ├── test_pipeline.py
+    ├── test_revenue_robust.py
+    └── test_sequential.py
 ```
 
 ---
 
-## Reproduce the Case Study
+## Reproduce Locally
 
-Requires Python 3.11+ and no third-party Python packages.
+Requires Python 3.11+ and no third-party runtime packages.
 
 ```bash
 python -m src.generate_dataset
@@ -275,13 +251,14 @@ python -m src.power --baseline 0.5116201859 --n-control 6024 --n-treatment 5976 
 python -m src.cuped
 python -m src.execute_notebook
 python -m src.experiment
+python -m src.revenue_robust
+python -m src.sequential
+python -m src.exposure_demo
 python -m src.run_sql
 python -m unittest discover -s tests -v
 ```
 
-Generated data and temporary outputs are written under `artifacts/` and excluded from version control.
-
-The committed [`reports/experiment_summary.md`](reports/experiment_summary.md) is a reproducibility target: CI regenerates the report from seed and fails if the output drifts.
+Generated data and temporary outputs live under `artifacts/` and are excluded from version control.
 
 ---
 
@@ -292,35 +269,41 @@ Every pull request:
 1. compiles the Python sources,
 2. regenerates the 12,000-user experiment,
 3. regenerates the 41,209-row event fact table,
-4. validates user and event data contracts,
-5. smoke-tests the explicit power planner,
-6. smoke-tests the CUPED-style sensitivity path,
-7. executes the five-cell reviewer notebook on the tested module path,
-8. regenerates experiment health + statistical evidence,
-9. diffs the generated report against the committed decision artifact,
-10. executes every analytical SQL query,
-11. and runs **17 behavioral / statistical tests**.
+4. validates user and event contracts,
+5. smoke-tests power and CUPED paths,
+6. executes the reviewer notebook,
+7. regenerates and diffs the primary experiment report,
+8. regenerates and diffs the revenue robustness report,
+9. regenerates and diffs the sequential-testing simulation,
+10. regenerates and diffs the exposure / ITT report,
+11. executes every analytical SQL query,
+12. and runs the full behavioral/statistical test suite.
 
-This prevents the portfolio narrative and notebook from silently diverging from the code or generated evidence.
-
----
-
-## Limitations
-
-This is a **synthetic case study**, not evidence from a live production experiment. The data-generating process intentionally contains treatment effects so the repository can demonstrate a complete analytics workflow.
-
-The generated event timestamps are a deterministic analytical representation of the synthetic user outcomes; they are not independent production telemetry. In a live system, event instrumentation, exposure logging, identity resolution, late-arriving events, bots, retries, and missing telemetry would require additional validation.
-
-The CUPED-style covariate is constructed from known synthetic pre-exposure dimensions; it is useful for demonstrating variance-reduction mechanics but is not equivalent to a genuine frozen pre-period outcome. Revenue and time-to-value remain descriptive supporting metrics, and the device interaction remains exploratory.
+This keeps the portfolio narrative, notebooks, reports, and source code on the same tested path.
 
 ---
 
-## Next Extensions
+## Methodological Discipline & Limitations
 
-- add robust / bootstrap uncertainty for skewed revenue,
-- add exposure logging and intent-to-treat vs treatment-on-treated examples,
-- add sequential-testing / peeking-risk examples,
-- and build a second case study focused on retention / lifecycle analysis rather than experimentation.
+This is a **synthetic case study**, not evidence from a production experiment. Treatment effects are intentionally present so the repository can demonstrate an end-to-end analytics workflow.
+
+Key boundaries are explicit:
+
+- the unadjusted seven-day activation test is the primary confirmatory analysis,
+- support tickets are the guardrail,
+- revenue and time-to-value are supporting outcomes,
+- device heterogeneity remains exploratory because the interaction is inconclusive at alpha 0.05,
+- CUPED-style adjustment is a sensitivity demonstration rather than genuine pre-period CUPED,
+- the sequential module is a separate null simulation rather than a retroactive stopping rule,
+- and the exposure / ITT module is a separate compliance simulation rather than fabricated telemetry for the main experiment.
+
+A production system would additionally need instrumentation QA, exposure logging, identity resolution, late-event handling, experiment governance, multiplicity policy, and a pre-registered stopping rule.
+
+---
+
+## Next Extension
+
+The next distinct case-study direction is **retention / lifecycle analytics** rather than adding more methods to this single onboarding experiment.
 
 ## License
 
