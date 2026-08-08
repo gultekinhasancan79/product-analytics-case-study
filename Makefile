@@ -1,6 +1,6 @@
-.PHONY: all generate quality analyze sql test clean
+.PHONY: all generate quality advanced analyze sql test clean
 
-all: generate quality analyze sql test
+all: generate quality advanced analyze sql test
 
 generate:
 	python -m src.generate_dataset
@@ -8,6 +8,10 @@ generate:
 
 quality:
 	python -m src.data_quality
+
+advanced:
+	python -m src.power --baseline 0.5116201859 --n-control 6024 --n-treatment 5976 --effect 0.0213450082
+	python -m src.cuped
 
 analyze:
 	python -m src.experiment
