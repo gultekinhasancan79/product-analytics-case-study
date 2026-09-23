@@ -231,7 +231,6 @@ The notebook imports the same tested repository modules instead of duplicating f
 └── tests/
     ├── test_advanced_experimentation.py
     ├── test_exposure_demo.py
-    ├── test_notebook.py
     ├── test_pipeline.py
     ├── test_revenue_robust.py
     └── test_sequential.py
